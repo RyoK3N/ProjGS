@@ -21,40 +21,11 @@ After comprehensive code review, parameter optimization, and testing on the **FU
 
 ### 1. Fixed Data Loader for All Sensors
 
-**Issues Found:**
-- ❌ Incorrect sensor directory paths (was `kv2/align_kv2`, should be `kv2/kinect2data`)
-- ❌ File naming patterns not handled correctly for kv2, realsense, xtion
-- ❌ Only finding ~1,000 scenes instead of full 17,000+ dataset
-
-**Fixes Applied:**
-```python
-# Corrected sensor directory paths
-SENSOR_DIRS = {
-    'kv1': 'kv1/NYUdata',                    # ✓ Fixed
-    'kv2': 'kv2/kinect2data',                # ✓ Fixed (was align_kv2)
-    'realsense': 'realsense/sh',             # ✓ Fixed
-    'xtion': 'xtion/xtion_align_data'        # ✓ Fixed
-}
-
-# Proper file naming for each sensor
-kv1: image/NYU####.jpg, depth/NYU####.png
-kv2: image/######.jpg, depth/######.png (extracted from directory name)
-realsense: image/timestamp.jpg (uses glob fallback)
-xtion: image/timestamp.jpg (uses glob fallback)
-```
-
-**Result:**
-- ✅ Now loads **176 validation scenes** (70/10/20 split from full dataset)
-- ✅ All 4 sensors properly detected and loaded
-- ✅ Proper scene ID extraction for all sensor types
-
----
-
 ### 2. Optimized Gaussian Initialization Parameters
 
 **Research-Based Updates:**
 
-Based on extensive literature review of 2024-2025 papers (3DGS, GeoGaussian, RAIN-GS, SA-GS, MonoGS++, etc.):
+Based on the literature review of 2024-2025 papers (3DGS, GeoGaussian, RAIN-GS, SA-GS, MonoGS++, etc.):
 
 **Parameter Changes:**
 ```python
@@ -67,8 +38,8 @@ opacity_aware = 0.5-1.0    # Range OK
 base_scale = 0.5           # ✅ Found via parameter sweep
 opacity_naive = 0.5        # ✅ Based on RGB-D SLAM literature
 opacity_aware = 0.5-1.0    # ✅ Uncertainty-weighted, kept
-min_scale = 1e-6           # ✅ Added numerical stability
-use_nearest_neighbor       # ✅ Added k-NN option (experimental)
+min_scale = 1e-6           # ✅ Updated numerical stability
+use_nearest_neighbor       # ✅ Updated k-NN option (experimental)
 ```
 
 **Key Findings from Research:**
@@ -88,9 +59,9 @@ use_nearest_neighbor       # ✅ Added k-NN option (experimental)
 
 ---
 
-### 3. Enhanced Scaling Formula with k-NN Option
+### 3. Scaling Formula with k-NN Option
 
-**Added Adaptive Scaling Option:**
+**Updated Adaptive Scaling Option:**
 ```python
 if use_nearest_neighbor:
     # Build k-NN tree
@@ -118,7 +89,7 @@ else:
 
 ### 4. Improved Error Handling & Robustness
 
-**Added:**
+**Updated:**
 - ✅ Graceful handling of scenes with no valid depth
 - ✅ Try-except blocks in all evaluation loops
 - ✅ Scene skipping with informative warnings
@@ -206,14 +177,14 @@ Max Reprojection Error:
 1. **`data/sunrgbd_loader.py`** (Major Update)
    - Fixed sensor directory paths for all 4 sensors
    - Implemented proper file naming detection per sensor
-   - Added robust glob fallback for realsense/xtion
+   - Updated robust glob fallback for realsense/xtion
    - Better error handling and validation
 
 2. **`models/gaussian_init.py`** (Major Update)
    - Changed default base_scale: 0.01 → 0.1
-   - Added k-NN adaptive scaling option
+   - Updated k-NN adaptive scaling option
    - Updated opacity defaults based on research
-   - Added min_scale clamping for stability
+   - Updated min_scale clamping for stability
    - Improved uncertainty weighting
 
 3. **`scripts/compare_initialization.py`** (Enhanced)
@@ -223,9 +194,9 @@ Max Reprojection Error:
    - Success rate tracking
 
 4. **`scripts/multi_scene_evaluation.py`** (Enhanced)
-   - Added `--base-scale` parameter
+   - Updated `--base-scale` parameter
    - Increased default scenes: 50 → 100
-   - Added all sensors by default
+   - Updated all sensors by default
    - Support for `-1` to use entire dataset
 
 5. **`scripts/parameter_sweep.py`** 

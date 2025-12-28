@@ -2,7 +2,7 @@
 
 **Project:** Projection-Guided Gaussian Splatting from Single RGB-D
 **Date Updated:** December 28, 2025
-**Status:** ✅ **FEASIBILITY CONFIRMED - GO FOR FULL DEVELOPMENT**
+**Status:** ✅ **FEASIBILITY STUDY 
 
 ---
 

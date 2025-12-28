@@ -1,0 +1,123 @@
+# ProjGS Training Configuration - A100 Server
+# ============================================
+# Optimized for: NVIDIA A100 (40GB/80GB)
+# Backend: CUDA with Tensor Cores
+# Full-scale training on complete dataset
+
+name: "projgs_a100_full"
+device: "cuda"
+
+# Dataset Configuration
+dataset:
+  name: "sunrgbd"
+  root_dir: "data/sunrgbd"
+  split: "train"
+  sensors: ["kv1", "kv2", "realsense", "xtion"]
+  resize: [480, 640]
+  max_scenes: null  # Use ALL training scenes
+
+# Gaussian Initialization
+initialization:
+  base_scale: 0.5
+  uncertainty_weight: true
+  use_nearest_neighbor: true  # Enable k-NN for better quality
+  min_scale: 1.0e-6
+  max_depth: 10.0
+
+# Training Configuration
+training:
+  num_iterations: 30000  # Full training
+  batch_size: 4  # Multi-scene batch (A100 has memory)
+  gradient_accumulation_steps: 1  # No accumulation needed
+
+  # Optimizer (standard 3DGS parameters)
+  optimizer:
+    type: "Adam"
+    position_lr: 1.6e-4
+    feature_lr: 2.5e-3
+    opacity_lr: 5.0e-2
+    scaling_lr: 5.0e-3
+    rotation_lr: 1.0e-3
+
+  # Learning rate scheduling
+  lr_schedule:
+    position_lr_init: 1.6e-4
+    position_lr_final: 1.6e-6
+    position_lr_delay_mult: 0.01
+    position_lr_max_steps: 30000
+
+  # Loss weights
+  loss:
+    lambda_dssim: 0.2
+    lambda_l1: 0.8
+
+  # Mixed precision with Tensor Cores
+  amp:
+    enabled: true
+    dtype: "bfloat16"  # A100 supports bfloat16 (better than float16)
+
+# Adaptive Density Control
+densification:
+  start_iteration: 500
+  stop_iteration: 15000  # Stop at 50% of training
+  interval: 100
+
+  grad_threshold: 2.0e-4
+  opacity_reset_interval: 3000
+  densify_grad_threshold: 2.0e-4
+
+  split_threshold: 0.02
+  min_opacity: 0.005
+  max_screen_size: 20
+
+# Pruning
+pruning:
+  min_opacity: 0.005
+  max_scale: 0.1
+  interval: 100
+
+# Rendering Configuration
+rendering:
+  resolution: [480, 640]
+  background: [0.0, 0.0, 0.0]
+
+# Memory Configuration (A100 has plenty)
+memory:
+  max_gaussians: 500000  # 10x more than Mac
+  gradient_checkpointing: false  # Don't need it on A100
+  empty_cache_interval: 50
+  pin_memory: true  # Pin memory for faster CUDA transfers
+
+# Logging & Checkpointing
+logging:
+  log_interval: 50
+  image_interval: 500
+  tensorboard_dir: "runs/a100"
+  save_dir: "checkpoints/a100"
+
+checkpointing:
+  save_interval: 5000
+  keep_last_n: 10  # Keep more checkpoints
+
+# Validation
+validation:
+  enabled: true
+  interval: 2500
+  num_scenes: 20  # More thorough validation
+
+# Reproducibility
+seed: 42
+
+# Performance tuning for A100
+performance:
+  num_workers: 8  # More workers for server
+  prefetch_factor: 4
+  benchmark: true  # cuDNN benchmarking
+  deterministic: false
+
+# Multi-GPU support (for multiple A100s)
+distributed:
+  enabled: false  # Set to true for multi-GPU
+  backend: "nccl"
+  world_size: 1
+  rank: 0

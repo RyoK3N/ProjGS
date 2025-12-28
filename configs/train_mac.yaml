@@ -1,0 +1,118 @@
+# ProjGS Training Configuration - Mac M4 Pro Optimized
+# =======================================================
+# Optimized for: Apple M4 Pro, 24GB Unified Memory, 16 GPU cores
+# Backend: MPS (Metal Performance Shaders)
+# Expected VRAM usage: ~8-12GB for single scene
+
+name: "projgs_mac_optimized"
+device: "mps"  # Apple Silicon MPS backend
+
+# Dataset Configuration
+dataset:
+  name: "sunrgbd"
+  root_dir: "data/sunrgbd"
+  split: "train"
+  sensors: ["kv1", "kv2", "realsense", "xtion"]
+  resize: [480, 640]  # Moderate resolution for Mac
+  max_scenes: 100  # Limit for local testing
+
+# Gaussian Initialization (from feasibility study)
+initialization:
+  base_scale: 0.5  # Optimal value from parameter sweep
+  uncertainty_weight: true
+  use_nearest_neighbor: false  # Disable for speed on Mac
+  min_scale: 1.0e-6
+  max_depth: 10.0
+
+# Training Configuration
+training:
+  num_iterations: 3000  # Reduced for Mac (vs 30k for A100)
+  batch_size: 1  # Single scene at a time
+  gradient_accumulation_steps: 4  # Effective batch size = 4
+
+  # Optimizer
+  optimizer:
+    type: "Adam"
+    position_lr: 1.6e-4
+    feature_lr: 2.5e-3
+    opacity_lr: 5.0e-2
+    scaling_lr: 5.0e-3
+    rotation_lr: 1.0e-3
+
+  # Learning rate scheduling
+  lr_schedule:
+    position_lr_init: 1.6e-4
+    position_lr_final: 1.6e-6
+    position_lr_delay_mult: 0.01
+    position_lr_max_steps: 3000
+
+  # Loss weights
+  loss:
+    lambda_dssim: 0.2  # D-SSIM weight
+    lambda_l1: 0.8     # L1 weight
+
+  # Mixed precision training (critical for Mac)
+  amp:
+    enabled: true  # Use automatic mixed precision
+    dtype: "float16"
+
+# Adaptive Density Control (from 3DGS paper)
+densification:
+  start_iteration: 500
+  stop_iteration: 2500  # Stop before end
+  interval: 100  # Every 100 iterations
+
+  # Densification thresholds
+  grad_threshold: 2.0e-4  # Position gradient threshold
+  opacity_reset_interval: 300
+  densify_grad_threshold: 2.0e-4
+
+  # Split/clone parameters
+  split_threshold: 0.02  # Scene extent fraction
+  min_opacity: 0.005
+  max_screen_size: 20  # pixels
+
+# Pruning
+pruning:
+  min_opacity: 0.005
+  max_scale: 0.1  # Relative to scene extent
+  interval: 100
+
+# Rendering Configuration
+rendering:
+  resolution: [480, 640]  # Match dataset
+  background: [0.0, 0.0, 0.0]  # Black background
+
+# Memory Optimization for Mac
+memory:
+  max_gaussians: 50000  # Limit Gaussian count for 24GB
+  gradient_checkpointing: true  # Save memory
+  empty_cache_interval: 10  # Clear MPS cache every N iterations
+  pin_memory: false  # Don't pin on unified memory architecture
+
+# Logging & Checkpointing
+logging:
+  log_interval: 10
+  image_interval: 100  # Log images every 100 iterations
+  tensorboard_dir: "runs/mac"
+  save_dir: "checkpoints/mac"
+
+checkpointing:
+  save_interval: 500
+  keep_last_n: 3  # Only keep 3 checkpoints (space saving)
+
+# Validation
+validation:
+  enabled: true
+  interval: 500
+  num_scenes: 5  # Quick validation on Mac
+
+# Reproducibility
+seed: 42
+
+# Performance tuning for Apple Silicon
+performance:
+  num_workers: 4  # Dataloader workers (Mac has good CPU)
+  prefetch_factor: 2
+  benchmark: true  # Enable MPS benchmarking
+  deterministic: false  # Allow non-deterministic for speed

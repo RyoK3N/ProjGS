@@ -1,0 +1,47 @@
+# =========================
+# Python cache files
+# =========================
+__pycache__/
+*.py[cod]
+
+data/__pycache__/
+models/__pycache__/
+tests/__pycache__/
+tests/unit/__pycache__/
+training/__pycache__/
+utils/__pycache__/
+
+# =========================
+# Checkpoints & outputs
+# =========================
+checkpoints/
+outputs/
+runs/mac/
+
+# =========================
+# Pytest
+# =========================
+.pytest_cache/
+
+# =========================
+# Dataset directories
+# =========================
+data/sunrgbd/
+
+# =========================
+# Generated test artifacts
+# =========================
+tests/plots/edge_pointcloud.html
+
+# =========================
+# macOS system files
+# =========================
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# =========================
+# IDE / Editor files (safe defaults)
+# =========================
+.vscode/
+.idea/
